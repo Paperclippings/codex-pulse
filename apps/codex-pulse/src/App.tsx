@@ -164,7 +164,7 @@ export default function App() {
         <div className="screen-title"><div className="eyebrow">ACTION QUEUE</div><h1>Needs you <span>{snapshot?.attention ?? '—'} waiting</span></h1></div>
         <div className="long-list" onWheel={scrollList}>{waiting.length ? waiting.map(threadRow) : <div className="empty">{snapshot?.attention == null ? 'Prompt status unavailable.' : 'Nothing needs your reply right now.'}</div>}</div>
       </section>}
-      <footer><span>{screen + 1} / 4</span> Swipe ← → between screens <span>•</span> Presets 1–4 jump directly</footer>
+      <footer><span>{screen + 1} / 4</span> {snapshot?.error ? 'Codex history retrying…' : 'Swipe ← → between screens'} <span>•</span> Presets 1–4 jump directly</footer>
     </main>
   );
 }

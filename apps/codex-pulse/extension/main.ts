@@ -189,24 +189,44 @@ async function readUsage(): Promise<Snapshot['usage']> {
 }
 
 let timer: number | undefined;
+let retryTimer: number | undefined;
 defineExtension({
   start(ctx) {
     let latest: Snapshot | undefined;
+    let lastGoodThreads: Awaited<ReturnType<typeof readThreads>> | undefined;
     let updating = false;
+    let retryDelayMs = 5_000;
     async function update() {
       if (updating) return;
       updating = true;
       try {
         const [threads, usage, tokenDays] = await Promise.allSettled([readThreads(), readUsage(), readTokenDays()]);
+        if (threads.status === 'fulfilled') {
+          lastGoodThreads = threads.value;
+          clearTimeout(retryTimer);
+          retryTimer = undefined;
+          retryDelayMs = 5_000;
+        } else {
+          ctx.log.warn(`Codex history read failed; retrying: ${String(threads.reason)}`);
+          if (retryTimer === undefined) {
+            const delay = retryDelayMs;
+            retryDelayMs = Math.min(retryDelayMs * 2, 60_000);
+            retryTimer = setTimeout(() => {
+              retryTimer = undefined;
+              void update();
+            }, delay);
+          }
+        }
+        const threadData = threads.status === 'fulfilled' ? threads.value : lastGoodThreads;
         latest = {
           type: 'snapshot', fetchedAt: Date.now(),
-          threads: threads.status === 'fulfilled' ? threads.value.threads : [],
-          needsYouThreads: threads.status === 'fulfilled' ? threads.value.needsYouThreads : [],
+          threads: threadData?.threads ?? [],
+          needsYouThreads: threadData?.needsYouThreads ?? [],
           usage: usage.status === 'fulfilled' ? usage.value : { primary: null, secondary: null, error: String(usage.reason) },
           tokenDays: tokenDays.status === 'fulfilled' ? tokenDays.value : [],
           // Pending prompts are inferred from local, unanswered question items.
-          attention: threads.status === 'fulfilled' ? threads.value.attention : null,
-          error: threads.status === 'rejected' ? String(threads.reason) : undefined,
+          attention: threadData?.attention ?? null,
+          error: threads.status === 'rejected' ? 'Codex history is temporarily unavailable. Retrying…' : undefined,
         };
         ctx.broadcast(json(latest));
       } finally {
@@ -231,5 +251,7 @@ defineExtension({
   },
   stop() {
     clearInterval(timer);
+    clearTimeout(retryTimer);
+    retryTimer = undefined;
   },
 });

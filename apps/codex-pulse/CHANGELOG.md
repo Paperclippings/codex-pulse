@@ -1,5 +1,9 @@
 # codex-pulse
 
+## 0.1.9
+
+Retry transient Codex history reads without showing SQLite errors
+
 ## 0.1.8
 
 Make local data paths portable for public release
