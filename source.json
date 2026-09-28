@@ -1,0 +1,8 @@
+{
+  "name": "Codex Pulse",
+  "description": "Codex activity and usage dashboard for BridgeThing.",
+  "homepage": "https://github.com/Paperclippings/codex-pulse",
+  "icon": null,
+  "base_url": "https://paperclippings.github.io/codex-pulse",
+  "recommended_sources": []
+}

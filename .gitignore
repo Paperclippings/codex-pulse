@@ -1,0 +1,10 @@
+node_modules
+dist
+site
+.dev-extension
+.DS_Store
+*.log
+.env*
+apps/*/Codex-Pulse-*.zip
+apps/*/screenshots/
+package-lock.json

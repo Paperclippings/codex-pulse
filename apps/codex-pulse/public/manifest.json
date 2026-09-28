@@ -1,0 +1,21 @@
+{
+  "id": "01a0e3d7-31e1-75f6-8477-e7035a0d1f4d",
+  "name": "Codex Pulse",
+  "version": "0.1.8",
+  "description": "Codex activity and usage on your Car Thing",
+  "permissions": [],
+  "art": {
+    "heroPx": 248,
+    "thumbPx": 96
+  },
+  "extension": {
+    "entry": "extension/desktop.mjs",
+    "permissions": [
+      "env:HOME",
+      "read:~/.codex/sessions",
+      "run:/usr/bin/sqlite3",
+      "run:/Applications/ChatGPT.app/Contents/Resources/codex-cli/CodexCLI.app/Contents/MacOS/codex"
+    ],
+    "api": 1
+  }
+}
