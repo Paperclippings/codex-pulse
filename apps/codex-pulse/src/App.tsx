@@ -5,7 +5,7 @@ import './pulse.css';
 
 type UsageWindow = { usedPercent: number; windowDurationMins: number; resetsAt: number } | null;
 type Thread = { id: string; title: string; updatedAt: number; state: 'running' | 'idle'; needsYou?: boolean };
-type TokenDay = { day: string; inputTokens: number; outputTokens: number; totalTokens: number };
+type TokenDay = { day: string; inputTokens: number; cachedInputTokens?: number; outputTokens: number; totalTokens: number };
 type Snapshot = {
   type: 'snapshot';
   fetchedAt: number;
@@ -33,7 +33,7 @@ const demo: Snapshot = {
   tokenDays: [2, 1, 0].map((offset, index) => {
     const date = new Date();
     date.setDate(date.getDate() - offset);
-    return { day: date.toLocaleDateString('en-CA'), inputTokens: [69000, 92000, 108000][index], outputTokens: [11000, 18000, 24000][index], totalTokens: [80000, 110000, 132000][index] };
+    return { day: date.toLocaleDateString('en-CA'), inputTokens: [69000, 92000, 108000][index], cachedInputTokens: [58000, 81000, 97000][index], outputTokens: [11000, 18000, 24000][index], totalTokens: [80000, 110000, 132000][index] };
   }),
   attention: 1,
 };
@@ -87,6 +87,7 @@ export default function App() {
   const rows = [...running, ...others].slice(0, 4);
   const waiting = snapshot?.needsYouThreads ?? snapshot?.threads.filter(thread => thread.needsYou) ?? [];
   const tokenDays = snapshot?.tokenDays ?? [];
+  const today = tokenDays.at(-1);
   const maxTokens = Math.max(1, ...tokenDays.map(day => day.totalTokens));
   const compact = (value: number) => value >= 1_000_000 ? `${(value / 1_000_000).toFixed(1)}m` : value >= 1000 ? `${(value / 1000).toFixed(value >= 100_000 ? 0 : 1)}k` : String(value);
   const threadRow = (thread: Thread) => <div className="thread" key={thread.id}>
@@ -143,18 +144,23 @@ export default function App() {
         {rows.length ? rows.map(threadRow) : <div className="empty">{snapshot?.error ?? 'Connect BridgeThing Desktop to show Codex activity.'}</div>}
       </section>
       </>}
-      {screen === 1 && <section className="screen-content">
+      {screen === 1 && <section className="screen-content limits-screen">
         <div className="screen-title"><div className="eyebrow">CODEX LIMITS</div><h1>Usage & limits</h1></div>
         <div className="limit-grid">{windowLabel(snapshot?.usage.primary ?? null, 'USAGE WINDOW')}{snapshot?.usage.secondary
           ? windowLabel(snapshot.usage.secondary, 'SECONDARY WINDOW')
-          : <div className="usage-card"><span>TODAY · THIS MAC</span><strong>{compact(tokenDays.at(-1)?.totalTokens ?? 0)}</strong><small>tokens recorded in local sessions</small></div>}</div>
-        <div className="section-head token-heading"><span>RECORDED TOKENS · THIS MAC</span><span>INPUT + OUTPUT</span></div>
-        <div className="token-days">{tokenDays.length ? tokenDays.map(day => <div className="token-day" key={day.day}>
-          <span>{new Date(`${day.day}T12:00:00`).toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' })}</span>
-          <div className="token-bar"><i style={{ width: `${Math.max(0, day.totalTokens / maxTokens * 100)}%` }} /></div>
-          <strong>{compact(day.totalTokens)}</strong>
-        </div>) : <div className="empty">Local token history unavailable.</div>}</div>
-        <p className="hint">Local session records only; limit percentages come from Codex.</p>
+          : <div className="usage-card"><span>TODAY · PROCESSED</span><strong>{compact(today?.totalTokens ?? 0)}</strong><small>{today?.cachedInputTokens === undefined ? 'cache breakdown unavailable' : `${compact(today.cachedInputTokens)} cached input`}</small></div>}</div>
+        <div className="section-head token-heading"><span>RECORDED TOKENS · THIS MAC</span><span>PROCESSED TOTAL INCLUDES CACHE</span></div>
+        <div className="token-days">{tokenDays.length ? tokenDays.map(day => {
+          const cached = Math.max(0, Math.min(day.totalTokens, day.cachedInputTokens ?? 0));
+          const other = Math.max(0, day.totalTokens - cached);
+          return <div className="token-day" key={day.day}>
+            <span>{new Date(`${day.day}T12:00:00`).toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' })}</span>
+            <div className="token-bar"><i className="cached" style={{ width: `${cached / maxTokens * 100}%` }} /><i className="uncached" style={{ width: `${other / maxTokens * 100}%` }} /></div>
+            <strong>{compact(day.totalTokens)}</strong>
+            <small>{day.cachedInputTokens === undefined ? 'cache breakdown unavailable' : `cached input ${compact(cached)} · uncached input + output ${compact(other)}`}</small>
+          </div>;
+        }) : <div className="empty">Local token history unavailable.</div>}</div>
+        <p className="hint">Local session counts include reused cached input. Limit percentages come from Codex.</p>
       </section>}
       {screen === 2 && <section className="screen-content">
         <div className="screen-title"><div className="eyebrow">RECENT TASKS</div><h1>Chats <span>{snapshot?.threads.length ?? 0} shown</span></h1></div>

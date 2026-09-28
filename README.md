@@ -15,10 +15,13 @@ BridgeThing asks for these extension permissions during installation: read `HOME
 - Recent local Codex task titles and whether their latest recorded turn is running
 - A count of local task threads with an unanswered Codex question
 - Remaining percentage and reset time for the Codex short and weekly usage windows
+- Three days of locally recorded processed tokens, split into cached input and uncached input plus output
 - Automatic refresh every 60 seconds
 - Four screens, selected with preset buttons 1–4 or horizontal swipes
 
 The Needs You indicator counts task threads with a stored question and no later user message. This is a useful local signal, but it is not the desktop app's full live attention state. The official Codex app-server reports live attention flags only for threads loaded in that same server process. Starting a second app-server for this extension returns those desktop threads as notLoaded. ChatGPT Work cloud chats are also outside the local SQLite task list.
+
+The token chart sums each response's local usage record. Its processed total includes cached input reused from earlier context; it is separate from Codex's account usage limits and is not a billing amount.
 
 ## Install
 

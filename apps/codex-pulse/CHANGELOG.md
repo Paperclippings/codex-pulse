@@ -1,5 +1,9 @@
 # codex-pulse
 
+## 0.1.10
+
+Show cached and uncached token breakdown on Limits
+
 ## 0.1.9
 
 Retry transient Codex history reads without showing SQLite errors

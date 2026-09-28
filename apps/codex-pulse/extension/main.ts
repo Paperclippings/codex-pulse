@@ -2,7 +2,7 @@ import { asJson, defineExtension, json } from '@bridgething/extension';
 
 type Thread = { id: string; title: string; updatedAt: number; state: 'running' | 'idle'; needsYou: boolean };
 type UsageWindow = { usedPercent: number; windowDurationMins: number; resetsAt: number } | null;
-type TokenDay = { day: string; inputTokens: number; outputTokens: number; totalTokens: number };
+type TokenDay = { day: string; inputTokens: number; cachedInputTokens: number; outputTokens: number; totalTokens: number };
 type Snapshot = {
   type: 'snapshot';
   fetchedAt: number;
@@ -60,14 +60,14 @@ async function readThreads(): Promise<{ threads: Thread[]; needsYouThreads: Thre
   return { threads, needsYouThreads, attention: [...waitingIds].filter(id => activeIds.has(id)).length };
 }
 
-const tokenFileCache = new Map<string, { modified: number; size: number; records: { timestamp: string; input: number; output: number; total: number }[] }>();
+const tokenFileCache = new Map<string, { modified: number; size: number; records: { timestamp: string; input: number; cachedInput: number; output: number; total: number }[] }>();
 
 async function tokenRecords(path: string) {
   const stat = await Deno.stat(path);
   const cached = tokenFileCache.get(path);
   const modified = stat.mtime?.getTime() ?? 0;
   if (cached?.modified === modified && cached.size === stat.size) return cached.records;
-  const records: { timestamp: string; input: number; output: number; total: number }[] = [];
+  const records: { timestamp: string; input: number; cachedInput: number; output: number; total: number }[] = [];
   const file = await Deno.open(path, { read: true });
   try {
     const reader = file.readable.pipeThrough(new TextDecoderStream()).getReader();
@@ -82,11 +82,12 @@ async function tokenRecords(path: string) {
         pending = pending.slice(end + 1);
         if (!line.includes('"type":"token_usage_record"')) continue;
         try {
-          const record = JSON.parse(line) as { timestamp: string; payload?: { usage?: { input_tokens?: number; output_tokens?: number; total_tokens?: number } } };
+          const record = JSON.parse(line) as { timestamp: string; payload?: { usage?: { input_tokens?: number; cached_input_tokens?: number; output_tokens?: number; total_tokens?: number } } };
           const usage = record.payload?.usage;
           if (usage && Number.isFinite(usage.total_tokens)) records.push({
             timestamp: record.timestamp,
             input: usage.input_tokens ?? 0,
+            cachedInput: usage.cached_input_tokens ?? 0,
             output: usage.output_tokens ?? 0,
             total: usage.total_tokens ?? 0,
           });
@@ -105,7 +106,7 @@ async function readTokenDays(): Promise<TokenDay[]> {
     date.setDate(date.getDate() - offset);
     return date.toLocaleDateString('en-CA');
   }).reverse();
-  const totals = new Map(days.map(day => [day, { day, inputTokens: 0, outputTokens: 0, totalTokens: 0 }]));
+  const totals = new Map(days.map(day => [day, { day, inputTokens: 0, cachedInputTokens: 0, outputTokens: 0, totalTokens: 0 }]));
   const utcDates = new Set<string>();
   for (let offset = 0; offset < 5; offset++) {
     const date = new Date(Date.now() - offset * 86_400_000);
@@ -121,6 +122,7 @@ async function readTokenDays(): Promise<TokenDay[]> {
           const total = totals.get(day);
           if (!total) continue;
           total.inputTokens += record.input;
+          total.cachedInputTokens += record.cachedInput;
           total.outputTokens += record.output;
           total.totalTokens += record.total;
         }
