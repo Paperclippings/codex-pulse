@@ -22,9 +22,9 @@ The Needs You indicator counts task threads with a stored question and no later 
 
 ## Install
 
-Download the newest `Codex-Pulse-<version>.zip` from [Releases](https://github.com/Paperclippings/codex-pulse/releases), then in BridgeThing Desktop open **Store → Install a local bundle** and select the zip. Keep BridgeThing Desktop running and linked to the Car Thing for live data.
+Download [Codex Pulse 0.1.8](https://paperclippings.github.io/codex-pulse/r/01a0e3d7-31e1-75f6-8477-e7035a0d1f4d/0.1.8.zip), then in BridgeThing Desktop open **Store → Install a local bundle** and select the zip. Keep BridgeThing Desktop running and linked to the Car Thing for live data.
 
-Once the [Codex Pulse catalog](https://paperclippings.github.io/codex-pulse/catalog.json) is live, you can add that URL as a source in BridgeThing Desktop's Store and install from there. Catalog listings are reviewed separately by BridgeThing.
+You can add the [Codex Pulse catalog](https://paperclippings.github.io/codex-pulse/catalog.v1.json) as a source in BridgeThing Desktop's Store and install from there. Directory listings are reviewed separately by BridgeThing.
 
 ## Build
 
